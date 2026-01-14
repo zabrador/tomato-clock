@@ -1,7 +1,6 @@
 import browser from "webextension-polyfill";
 
 import {
-  NOTIFICATION_ID,
   STORAGE_KEY,
   TIMER_TYPE,
 } from "../utils/constants";
