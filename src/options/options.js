@@ -1,3 +1,4 @@
+import browser from "webextension-polyfill";
 import Modal from "bootstrap/js/dist/modal";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./options.css";
@@ -7,6 +8,7 @@ import {
   AVAILABLE_NOTIFICATION_SOUNDS,
   DEFAULT_SETTINGS,
   SETTINGS_KEY,
+  STORAGE_KEY,
 } from "../utils/constants";
 
 export default class Options {
@@ -28,6 +30,13 @@ export default class Options {
     );
     this.domToolbarBadgeCheckbox = document.getElementById(
       "toolbar-badge-checkbox",
+    );
+    this.domCustomSoundUploadContainer = document.getElementById(
+      "custom-sound-upload-container",
+    );
+    this.domCustomSoundUpload = document.getElementById("custom-sound-upload");
+    this.domCustomSoundFilename = document.getElementById(
+      "custom-sound-filename",
     );
 
     this.setOptionsOnPage();
@@ -63,6 +72,21 @@ export default class Options {
         selectedNotificationSound ||
         DEFAULT_SETTINGS[SETTINGS_KEY.SELECTED_NOTIFICATION_SOUND];
       this.domNotificationSoundSelect.disabled = !isNotificationSoundEnabled;
+
+      this.domCustomSoundUploadContainer.style.display =
+        selectedNotificationSound === "custom" ? "block" : "none";
+
+      if (selectedNotificationSound === "custom") {
+        browser.storage.local
+          .get(STORAGE_KEY.CUSTOM_SOUND_FILENAME)
+          .then((result) => {
+            const filename = result[STORAGE_KEY.CUSTOM_SOUND_FILENAME];
+            if (filename) {
+              this.domCustomSoundFilename.textContent = `Current sound: ${filename}`;
+            }
+          });
+      }
+
       this.domToolbarBadgeCheckbox.checked = isToolbarBadgeEnabled;
     });
   }
@@ -106,14 +130,53 @@ export default class Options {
 
         if (input === this.domNotificationSoundSelect) {
           const soundFile = this.domNotificationSoundSelect.value;
-          if (soundFile) {
-            const audioPath = `/assets/sounds/${soundFile}`;
-            new Audio(audioPath).play();
+          if (soundFile === "custom") {
+            this.domCustomSoundUploadContainer.style.display = "block";
+            browser.storage.local
+              .get([STORAGE_KEY.CUSTOM_SOUND, STORAGE_KEY.CUSTOM_SOUND_FILENAME])
+              .then((result) => {
+                const sound = result[STORAGE_KEY.CUSTOM_SOUND];
+                const filename = result[STORAGE_KEY.CUSTOM_SOUND_FILENAME];
+                if (sound) {
+                  new Audio(sound).play();
+                }
+                if (filename) {
+                  this.domCustomSoundFilename.textContent = `Current sound: ${filename}`;
+                } else {
+                  this.domCustomSoundFilename.textContent = "";
+                }
+              });
+          } else {
+            this.domCustomSoundUploadContainer.style.display = "none";
+            if (soundFile) {
+              const audioPath = `/assets/sounds/${soundFile}`;
+              new Audio(audioPath).play();
+            }
           }
         }
 
         this.saveOptions();
       });
+    });
+
+    this.domCustomSoundUpload.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target.result;
+          browser.storage.local
+            .set({
+              [STORAGE_KEY.CUSTOM_SOUND]: result,
+              [STORAGE_KEY.CUSTOM_SOUND_FILENAME]: file.name,
+            })
+            .then(() => {
+              new Audio(result).play();
+              this.domCustomSoundFilename.textContent = `Current sound: ${file.name}`;
+            });
+        };
+        reader.readAsDataURL(file);
+      }
     });
 
     const modalElement = document.getElementById("reset-confirmation-modal");

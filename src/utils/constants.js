@@ -4,6 +4,8 @@ export const STORAGE_KEY = {
   TIMELINE: "timeline",
   SETTINGS: "settings",
   TIMER: "timer",
+  CUSTOM_SOUND: "customSound",
+  CUSTOM_SOUND_FILENAME: "customSoundFilename",
 };
 
 export const SETTINGS_KEY = {
@@ -31,6 +33,7 @@ export const AVAILABLE_NOTIFICATION_SOUNDS = [
   { id: "kitchen-timer.mp3", name: "Kitchen Timer" },
   { id: "button.mp3", name: "Button" },
   { id: "timer-chime.mp3", name: "Timer Chime" },
+  { id: "custom", name: "Custom" },
 ];
 
 export const TIMER_TYPE = {

@@ -1,6 +1,10 @@
 import browser from "webextension-polyfill";
 
-import { NOTIFICATION_ID, TIMER_TYPE } from "../utils/constants";
+import {
+  NOTIFICATION_ID,
+  STORAGE_KEY,
+  TIMER_TYPE,
+} from "../utils/constants";
 
 export default class Notifications {
   constructor(settings) {
@@ -13,7 +17,15 @@ export default class Notifications {
     // Chrome restricts audio playback to Offscreen documents
     const { selectedNotificationSound } = await this.settings.getSettings();
     const soundFile = selectedNotificationSound || "timer-chime.mp3";
-    const audioPath = `/assets/sounds/${soundFile}`;
+    let audioPath;
+
+    if (soundFile === "custom") {
+      const stored = await browser.storage.local.get(STORAGE_KEY.CUSTOM_SOUND);
+      audioPath =
+        stored[STORAGE_KEY.CUSTOM_SOUND] || "/assets/sounds/timer-chime.mp3";
+    } else {
+      audioPath = `/assets/sounds/${soundFile}`;
+    }
 
     if (typeof chrome !== "undefined" && chrome.offscreen) {
       const hasOffscreen = await chrome.offscreen.hasDocument();
